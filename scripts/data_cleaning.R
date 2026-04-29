@@ -1,4 +1,4 @@
-##### WAR #####
+##### WAR Cleaned #####
 
 library(httr)
 library(jsonlite)
