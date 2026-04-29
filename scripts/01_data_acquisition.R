@@ -101,7 +101,7 @@ total_pages <- ceiling(total_rows / page_size)
 all_data <- lapply(1:total_pages, get_page) |> bind_rows()
 
 # clean result
-df <- all_data %>%
-  select(Name, WAR)
+df <- first_data %>%
+  select(playerName, totalWAR)
 
 nrow(df)
