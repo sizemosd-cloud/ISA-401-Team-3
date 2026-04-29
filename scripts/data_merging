@@ -1,12 +1,18 @@
+all_players_2025 <- bind_rows(hitter_data, pitcher_data) %>%
+  select(
+    player_full_name, 
+    position_name, 
+    position_abbreviation, 
+    team_name
+  ) %>%
+  distinct(player_full_name, .keep_all = TRUE)
 
 
+player_position <- all_players_2025 |> select(player_full_name, position_name, team_name)
 
 df3 <- df |> left_join(salary_table, by = join_by(playerName == player_names))
-          |> left_join(all_players_2025, by = join_by(playerName == player_names))
+          |> left_join(player_position, by = join_by(playerName == player_full_name))
 
 df3 <- df |> inner_join(salary_table, by = join_by(playerName == player_names)) 
-          |> inner_join(all_players_2025, by = join_by(playerName == player_names))
+          |> inner_join(player_position, by = join_by(playerName == player_full_name))
 
-
-
-all_players_2025
