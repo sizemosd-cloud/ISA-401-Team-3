@@ -1,4 +1,4 @@
-##### Player Cleaned #####
+##### Salaries Cleaned #####
 
 [insert]
 
