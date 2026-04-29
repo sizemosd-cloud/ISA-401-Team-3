@@ -6,11 +6,8 @@ library(readr)
 library(robotstxt)
 
 
-# Salaries
+##### Salaries #####
 
-# Ask to scrape: 
-
-# URL 1
 
 url1<- "https://www.spotrac.com/mlb/rankings/player/_/year/2025/sort/cap_total"
 paths_allowed(paths="https://www.spotrac.com/mlb/rankings/player/_/year/2025/sort/cap_total")
@@ -29,7 +26,8 @@ player_salaries <- page2 |>
 head(player_names)
 head(player_salaries)
 
-# Positions
+##### Positions #####
+
 library(baseballr)
 library(dplyr)
 
@@ -59,7 +57,7 @@ all_players_2025 <- bind_rows(hitter_data, pitcher_data) %>%
 head(all_players_2025)
 
 
-# WAR 
+##### WAR #####
 
 library(httr)
 library(jsonlite)
