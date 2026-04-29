@@ -22,6 +22,8 @@ player_salaries <- page2 |>
   html_elements("span.medium") |> 
   html_text(trim = TRUE)
 
+player_salaries <- player_salaries[1:1512]
+
 head(player_names)
 head(player_salaries)
 
