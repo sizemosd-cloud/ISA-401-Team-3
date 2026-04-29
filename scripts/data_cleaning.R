@@ -57,6 +57,7 @@ first_data$totalWAR <- round(first_data$totalWAR, 2)
 
 # clean result
 df <- first_data %>%
-  select(playerName, totalWAR, pos)
+  select(playerName, totalWAR) %>%
+  mutate(totalWAR = round(totalWAR,2))
 
 nrow(df)
