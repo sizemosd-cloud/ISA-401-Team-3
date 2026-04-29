@@ -1,1 +1,4 @@
 
+df3 <- df |> left_join(salary_table, by = join_by(playerName == player_names))
+
+df3 <- df |> inner_join(salary_table, by = join_by(playerName == player_names))
