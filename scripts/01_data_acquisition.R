@@ -96,9 +96,3 @@ first_data <- fromJSON(content(first, "text", encoding = "UTF-8"))
 total_rows <- first_data$total
 page_size <- 100
 total_pages <- ceiling(total_rows / page_size)
-
-# clean result
-df <- first_data %>%
-  select(playerName, totalWAR, pos)
-
-nrow(df)
