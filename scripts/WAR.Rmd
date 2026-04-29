@@ -1,0 +1,43 @@
+---
+title: "Untitled"
+author: "Layne Walter"
+date: "2026-04-27"
+output: html_document
+---
+
+```{r}
+library(httr)
+library(jsonlite)
+library(rvest)
+library(readr)
+library(robotstxt)
+library(dplyr)
+```
+
+```{r}
+url1<- "https://www.fangraphs.com/leaders/war?season=2025"
+paths_allowed(paths="https://www.fangraphs.com/leaders/war?season=2025")
+
+page2 <- read_html(url1)
+```
+
+```{r}
+fangraphs <- page2 |> 
+  html_elements("#root-war-leaders > div.leaders-war__data__wrapper > div > div.fg-data-grid.table-type > div.table-wrapper-outer > div > div.table-scroll > table") |> 
+  html_table(header = TRUE)
+
+players <- as.list(fangraphs[[1]][["Name"]])
+total_WAR <- as.list(fangraphs[[1]][["Total WAR"]])
+
+
+df <- data.frame(
+  Player = fangraphs[[1]][["Name"]],
+  total_WAR = fangraphs[[1]][["Total WAR"]]
+)
+```
+
+
+
+
+
+
