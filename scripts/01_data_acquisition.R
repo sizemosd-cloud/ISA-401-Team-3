@@ -102,6 +102,6 @@ all_data <- lapply(1:total_pages, get_page) |> bind_rows()
 
 # clean result
 df <- first_data %>%
-  select(playerName, totalWAR)
+  select(playerName, totalWAR, pos)
 
 nrow(df)
