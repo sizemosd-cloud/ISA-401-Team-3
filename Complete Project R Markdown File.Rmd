@@ -17,13 +17,17 @@ library(robotstxt)
 
 ##### Salaries #####
 
+# Store the website as variable and declare that the script is allowed data from the URL
 
 url1<- "https://www.spotrac.com/mlb/rankings/player/_/year/2025/sort/cap_total"
 paths_allowed(paths="https://www.spotrac.com/mlb/rankings/player/_/year/2025/sort/cap_total")
 
+# Pull the webpage content from the URL and load it into R so it can be read and scraped.
+
 page2 <- read_html(GET(url1, add_headers(`User-Agent` = "Mozilla/5.0")))
 
-# NOW you can scrape the elements
+# Extract data from the webpage by pulling player names and salaries and stores them in seperate variables, and display the first few enteries to ensure results are correct. 
+
 player_names <- page2 |> 
   html_elements("div.link a") |> 
   html_text(trim = TRUE)
@@ -40,6 +44,8 @@ head(player_salaries)
 library(baseballr)
 library(dplyr)
 
+# This code pulls the hitting and pitching statistics for the 2025 season and storing them in respective dataset 
+
 hitter_data <- mlb_stats(
   stat_type = "season",
   stat_group = "hitting",
@@ -54,6 +60,8 @@ pitcher_data <- mlb_stats(
   player_pool = "All"
 )
 
+# Combine the hitting and pitching datasets into one dataset, keep only the essential information and then remove duplicate players so each player appears only once.
+
 all_players_2025 <- bind_rows(hitter_data, pitcher_data) %>%
   select(
     player_full_name, 
@@ -67,7 +75,10 @@ head(all_players_2025)
 
 
 ##### WAR #####
+
 base_url <- "https://www.fangraphs.com/api/leaders/war"
+
+# Define a function that takes a page number and send a web request to an API using specific filters to retrieve a numbered set of data for 2025 MLB stats.
 
 get_page <- function(page_num) {
   res <- GET(base_url, query = list(
@@ -79,7 +90,9 @@ get_page <- function(page_num) {
     page = page_num,
     pageSize = 100
   ))
-  
+
+# Convert the API response into a usable JSON format and extract the main data portion from it, then return that data so it can be used in the dataset.
+
   data <- fromJSON(content(res, "text", encoding = "UTF-8"))
   return(data$data)
 }
@@ -104,7 +117,10 @@ first_data <- fromJSON(content(first, "text", encoding = "UTF-8"))
 
 ### Data Cleaning
 ```{r}
+
 ##### Salaries Cleaned #####
+
+# Create a table that pairs player names with their salaries, remove duplicate players so each appear only once, and then display the first few rows of the cleaned salary dataset.
 
 player_salaries <- player_salaries[1:1512]
 
@@ -132,6 +148,9 @@ player_position <- player_position |>
 head(player_position)
 
 ##### WAR Cleaned #####
+
+# round the WAR values and keep only the player name and WAR columns, remove duplicate players, and then return the number of rows in the cleaned dataset.
+
 first_data$totalWAR <- round(first_data$totalWAR, 2)
 
 # clean result
@@ -145,8 +164,10 @@ nrow(WARData)
 ```
 
 
-### Data Merging
+### Data Merging ###
 ```{r}
+# The code merge the WAR dataset with player position data and salary data. The left join keeps all WAR players and adds matching position and salary info when available, while the inner join keeps only players who appear in all datasets.
+
 leftjoin_Complete_Table <- WARData |> 
   left_join(player_position, by = join_by(playerName == player_full_name)) |> 
   left_join(salary_table, by = join_by(playerName == Player)) 
