@@ -1,5 +1,6 @@
 ##### DATA MERGING #####
 
+# USED CHAT ISA BY FADEL TO HELP :)
 # need to install.packages("fuzzyjoin") and install.packages("stringr")
 
 # Helper function to clean names
