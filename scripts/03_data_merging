@@ -1,9 +1,56 @@
-leftjoin_Complete_Table <- WARData |> 
-  left_join(player_position, by = join_by(playerName == player_full_name)) |> 
-  left_join(salary_table, by = join_by(playerName == Player)) 
+##### DATA MERGING #####
 
+# need to install.packages("fuzzyjoin") and install.packages("stringr")
 
+# Helper function to clean names
+clean_names <- function(name_vec) {
+  name_vec |>
+    stringr::str_to_lower() |>
+    stringr::str_replace_all("[[:punct:]]", "") |> 
+    stringr::str_replace_all("\\b(jr|sr|ii|iii|iv)\\b", "") |>
+    stringr::str_squish()
+}
 
-innerjoin_Complete_Table <- WARData |> 
-  inner_join(player_position, by = join_by(playerName == player_full_name)) |> 
-  inner_join(salary_table, by = join_by(playerName == Player)) 
+# Apply cleaning to all three tables
+salary_table <- salary_table |> 
+  dplyr::mutate(clean_name = clean_names(Player))
+
+all_players_2025 <- all_players_2025 |> 
+  dplyr::mutate(clean_name = clean_names(player_full_name))
+
+war_data <- war_data |> 
+  dplyr::mutate(clean_name = clean_names(playerName))
+
+# Step 1: Fuzzy join salary with positions (INNER JOIN)
+salary_position <- salary_table |>
+  fuzzyjoin::stringdist_inner_join(
+    all_players_2025, 
+    by = "clean_name", 
+    max_dist = 0.1, 
+    method = "jw"
+  )
+
+# Step 2: Fuzzy join result with WAR (INNER JOIN)
+final_table <- salary_position |>
+  fuzzyjoin::stringdist_inner_join(
+    war_data, 
+    by = c("clean_name.x" = "clean_name"), 
+    max_dist = 0.1, 
+    method = "jw"
+  ) |>
+  dplyr::select(
+    Player = Player, 
+    Position = position_abbreviation, 
+    Team = team_name, 
+    Salary = Salary, 
+    WAR = totalWAR
+  )
+
+head(final_table)
+nrow(final_table)
+
+# Optional: Check how many players you kept
+cat("Players in salary table:", nrow(salary_table), "\n")
+cat("Players in position table:", nrow(all_players_2025), "\n")
+cat("Players in WAR table:", nrow(war_data), "\n")
+cat("Players in final merged table:", nrow(final_table), "\n")
