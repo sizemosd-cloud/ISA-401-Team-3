@@ -40,8 +40,31 @@ head(salary_table)
 
 ##### Position Cleaned #####
 
-[insert]
+library(baseballr)
+library(dplyr)
 
+hitter_data <- mlb_stats(
+  stat_type = "season",
+  stat_group = "hitting",
+  season = 2025,
+  player_pool = "All"
+)
+
+pitcher_data <- mlb_stats(
+  stat_type = "season",
+  stat_group = "pitching",
+  season = 2025,
+  player_pool = "All"
+)
+
+all_players_2025 <- bind_rows(hitter_data, pitcher_data) %>%
+  select(
+    player_full_name, 
+    position_name, 
+    position_abbreviation, 
+    team_name
+  ) %>%
+  distinct(player_full_name, .keep_all = TRUE)
 
 
 ##### WAR Cleaned #####
