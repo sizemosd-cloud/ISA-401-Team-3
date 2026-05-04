@@ -35,6 +35,9 @@ salary_table <- data.frame(
   stringsAsFactors = FALSE
 )
 
+salary_table <- salary_table|> 
+  distinct(Player, .keep_all = TRUE)
+
 head(salary_table)
 
 
