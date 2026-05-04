@@ -19,7 +19,7 @@ salary_table <- salary_table |>
 all_players_2025 <- all_players_2025 |> 
   dplyr::mutate(clean_name = clean_names(player_full_name))
 
-war_data <- war_data |> 
+war_data <- WARData |> 
   dplyr::mutate(clean_name = clean_names(playerName))
 
 # Step 1: Fuzzy join salary with positions (INNER JOIN)
