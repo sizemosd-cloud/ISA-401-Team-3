@@ -279,9 +279,9 @@ all_data <- lapply(1:total_pages, get_page) |> bind_rows()
 
 # clean WAR values
 first_data$totalWAR <- round(first_data$totalWAR, 2)
-first_data[c(125, 1224), 2]
-first_data[c(125, 1224), 2] <- c("Max Muncy (LAD)", "Max Muncy (ATH)")
-first_data[c(125, 1224), 2]
+first_data[c(126, 1224), 2]
+first_data[c(126, 1224), 2] <- c("Max Muncy (LAD)", "Max Muncy (ATH)")
+first_data[c(126, 1224), 2]
 
 war_data <- first_data |> 
   select(playerName, totalWAR) |> 
