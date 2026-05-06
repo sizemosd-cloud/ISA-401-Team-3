@@ -449,8 +449,7 @@ inactive_subset <- Inactivename_split |>
 
 ## Data Validation
 ```{r}
-
-
+library(openxlsx)
 final_table |> 
   filter(Position == "X")
 
@@ -466,5 +465,5 @@ dupe_names <- as.list(unique(duplicate_names))
 
 new_final_table <- final_table |>
   filter(!Player %in% dupe_names)
-
+write.xlsx(final_table, "ISA401_final_table.xlsx")
 ```
