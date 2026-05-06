@@ -245,22 +245,24 @@ base_url <- "https://www.fangraphs.com/api/leaders/war"
 get_page <- function(page_num) {
   res <- GET(base_url, query = list(
     season = 2025,
-    team = 19,
+    team = team,
     wartype = 1,
     position = "all",
     league = "all",
     page = page_num,
     pageSize = 100
-  ))
+  ), 
+  add_headers(`User-Agent` = "Mozilla/5.0"))
   
   data <- fromJSON(content(res, "text", encoding = "UTF-8"))
+  print(names(data))
   return(data$data)
 }
 
 # first request (for total rows)
 first <- GET(base_url, query = list(
   season = 2025,
-  team = 19,
+  team = 0,
   wartype = 1,
   position = "all",
   league = "all",
@@ -269,13 +271,6 @@ first <- GET(base_url, query = list(
 ))
 
 first_data <- fromJSON(content(first, "text", encoding = "UTF-8"))
-
-total_rows <- first_data$total
-page_size <- 100
-total_pages <- ceiling(total_rows / page_size)
-
-# loop through all pages
-all_data <- lapply(1:total_pages, get_page) |> bind_rows()
 
 # clean WAR values
 first_data$totalWAR <- round(first_data$totalWAR, 2)
@@ -379,7 +374,7 @@ final_table <- salary_position |>
   fuzzyjoin::stringdist_inner_join(
     war_data, 
     by = c("clean_name.x" = "clean_name"), 
-    max_dist = 0.05, 
+    max_dist = 0.001, 
     method = "jw"
   ) |>
   dplyr::select(
@@ -444,7 +439,6 @@ inactive_subset <- Inactivename_split |>
   filter(last_name %in% overlap_last_names) |> 
   select(clean_name, last_name)
 
-
 ```
 
 ## Data Validation
@@ -465,5 +459,10 @@ dupe_names <- as.list(unique(duplicate_names))
 
 new_final_table <- final_table |>
   filter(!Player %in% dupe_names)
+
+parse_number(final_table$Salary)
+
+final_table$Salary <- as.numeric(parse_number(final_table$Salary))
+
 write.xlsx(final_table, "ISA401_final_table.xlsx")
 ```
