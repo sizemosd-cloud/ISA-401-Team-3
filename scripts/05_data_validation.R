@@ -179,22 +179,6 @@ head(salary_table)
 ```{r}
 ##### Position Cleaned #####
 
-library(baseballr)
-library(dplyr)
-
-hitter_data <- mlb_stats(
-  stat_type = "season",
-  stat_group = "hitting",
-  season = 2025,
-  player_pool = "All"
-)
-
-pitcher_data <- mlb_stats(
-  stat_type = "season",
-  stat_group = "pitching",
-  season = 2025,
-  player_pool = "All"
-)
 # look for duplicated names in each dataset
 hitter_data$player_full_name[duplicated(hitter_data$player_full_name)]
 pitcher_data$player_full_name[duplicated(pitcher_data$player_full_name)]
@@ -204,6 +188,7 @@ which(hitter_data$player_full_name == "Max Muncy")
 hitter_data[c(253, 427), 43] <- c("Max Muncy (LAD)", "Max Muncy (ATH)")
 hitter_data$player_full_name[duplicated(hitter_data$player_full_name)]
 
+# redo all_players_2025 table without duplicated names
 all_players_2025 <- bind_rows(hitter_data, pitcher_data) %>%
   select(player_full_name, position_name, position_abbreviation, team_name) |> 
   distinct(player_full_name, .keep_all = TRUE) 
@@ -211,24 +196,25 @@ all_players_2025 <- bind_rows(hitter_data, pitcher_data) %>%
 # Check that all players have a position
 unique(all_players_2025$position_abbreviation)
 
-# Look for players without a position
+# Look for players without a position (the "X" value)
 all_players_2025 |> 
   filter(position_abbreviation == "X")
 
-# find the rows that correspond to that player
+# find the rows that correspond to those players
 which(all_players_2025$position_abbreviation == "X")
 
-# fill in missing positions
 all_players_2025[c(211, 243, 376, 503, 519, 531, 543,
-                   561, 593, 640, 649, 714, 747), 3]
+                   561, 593, 640, 649, 714, 747), c(1,3)]
 
-all_players_2025[c(211, 243, 376, 503, 519, 531, 543,
-                   561, 593, 640, 649, 714, 747), 3] <- c(
-                  "2B", "OF", "DH", "OF/3B", "RF", "OF/1B",
-                  "SS", "OF", "1B", "OF", "CF/2B", "OF", "C")
+# fill in missing positions by using their primary position played for the year 2025 on baseball-reference.com
+all_players_2025[c(211, 243, 376, 503, 519, 531, 
+                   543, 561, 593, 640, 649, 714, 747), 3] <- c(
+                  "2B", "OF", "DH", "OF", "RF", "OF",
+                  "SS", "OF", "1B", "OF", "2B", "OF", "C")
 all_players_2025 |> 
   filter(position_abbreviation == "X")
 
+# check to make sure there are no duplicated names
 all_players_2025$player_full_name[duplicated(all_players_2025$player_full_name)]
   
 ```
