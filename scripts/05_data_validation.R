@@ -4,7 +4,7 @@ library(openxlsx)
 
 # check for any other positions than the standard ones
 final_table |> 
-  select(unique(Position))
+  distinct(Position)
 
 # check for any duplicated names within the final table
 final_table$Player[duplicated(final_table$Player)]
