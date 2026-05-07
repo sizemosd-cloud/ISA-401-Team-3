@@ -1,122 +1,430 @@
+### Data Cleaning
+```{r}
 ##### Salaries Cleaned #####
 
-# Load libraries
-library(httr)
-library(jsonlite)
-library(rvest)
-library(readr)
-library(robotstxt)
+# cut down salary list to match player names
+player_salaries <- player_salaries[1:1514]
 
+# look for duplicated names in list
+player_names[duplicated(player_names)]
 
-url1<- "https://www.spotrac.com/mlb/rankings/player/_/year/2025/sort/cap_total"
-paths_allowed(paths="https://www.spotrac.com/mlb/rankings/player/_/year/2025/sort/cap_total")
+# look up player names in a new data frame
+player_names_df <- data.frame(player_names)
+player_names_df[c(115, 1278, 271, 1015, 1077, 1078, 1103), 1]
 
-page2 <- read_html(GET(url1, add_headers(`User-Agent` = "Mozilla/5.0")))
+# confirm names in data frame are same in the list
+player_names[c(115, 1278, 271, 1015, 1077, 1078, 1103)]
 
-# NOW you can scrape the elements
-player_names <- page2 |> 
-  html_elements("div.link a") |> 
-  html_text(trim = TRUE)
-
-player_salaries <- page2 |> 
-  html_elements("span.medium") |> 
-  html_text(trim = TRUE)
-
-player_salaries <- player_salaries[1:1512]
+# fix duplicated names
+player_names[c(115, 1278, 271, 1015, 1077, 1078, 1103)] <- c("Max Muncy (LAD)", "Max Muncy (ATH)", "Luis García Jr.", "Luis F. Castillo", 
+                                                             "José Fermín", "José Fermin", "Luis García")
+# confirm names are fixed
+player_names[c(115, 1278, 271, 1015, 1077, 1078, 1103)]
 
 head(player_names)
 head(player_salaries)
 
 # clean result
-
 salary_table <- data.frame(
   Player = player_names,
   Salary = player_salaries,
   stringsAsFactors = FALSE
 )
 
-salary_table <- salary_table|> 
+# check that there are no other duplicated names in the new salary_table
+salary_table$Player[duplicated(salary_table$Player)]
+
+salary_table <- salary_table |> 
   distinct(Player, .keep_all = TRUE)
 
 head(salary_table)
+```
 
 
+```{r}
 ##### Position Cleaned #####
 
-library(baseballr)
-library(dplyr)
+# look for duplicated names in each dataset
+hitter_data$player_full_name[duplicated(hitter_data$player_full_name)]
+pitcher_data$player_full_name[duplicated(pitcher_data$player_full_name)]
 
-hitter_data <- mlb_stats(
-  stat_type = "season",
-  stat_group = "hitting",
-  season = 2025,
-  player_pool = "All"
-)
+# fix duplicated name
+which(hitter_data$player_full_name == "Max Muncy")
+hitter_data[c(253, 427), 43] <- c("Max Muncy (LAD)", "Max Muncy (ATH)")
+hitter_data$player_full_name[duplicated(hitter_data$player_full_name)]
 
-pitcher_data <- mlb_stats(
-  stat_type = "season",
-  stat_group = "pitching",
-  season = 2025,
-  player_pool = "All"
-)
-
+# redo all_players_2025 table without duplicated names
 all_players_2025 <- bind_rows(hitter_data, pitcher_data) %>%
-  select(
-    player_full_name, 
-    position_name, 
-    position_abbreviation, 
-    team_name
-  ) %>%
-  distinct(player_full_name, .keep_all = TRUE)
+  select(player_full_name, position_name, position_abbreviation, team_name) |> 
+  distinct(player_full_name, .keep_all = TRUE) 
 
+# Check that all players have a position
+unique(all_players_2025$position_abbreviation)
 
+# Look for players without a position (the "X" value)
+all_players_2025 |> 
+  filter(position_abbreviation == "X")
+
+# find the rows that correspond to those players
+which(all_players_2025$position_abbreviation == "X")
+
+all_players_2025[c(211, 243, 376, 503, 519, 531, 543,
+                   561, 593, 640, 649, 714, 747), c(1,3)]
+
+# fill in missing positions by using their primary position played for the year 2025 on baseball-reference.com
+all_players_2025[c(211, 243, 376, 503, 519, 531, 
+                   543, 561, 593, 640, 649, 714, 747), 3] <- c(
+                  "2B", "RF", "DH", "RF", "RF", "LF",
+                  "SS", "LF", "1B", "LF", "2B", "RF", "C")
+
+all_players_2025[c(211, 243, 376, 503, 519, 531, 543,
+                   561, 593, 640, 649, 714, 747), c(1,3)]
+
+all_players_2025 |> 
+  filter(position_abbreviation == "X")
+
+# check to make sure there are no duplicated names
+all_players_2025$player_full_name[duplicated(all_players_2025$player_full_name)]
+  
+```
+
+```{r}
 ##### WAR Cleaned #####
 
-library(httr)
-library(jsonlite)
-library(dplyr)
-
-base_url <- "https://www.fangraphs.com/api/leaders/war"
-
-get_page <- function(page_num) {
-  res <- GET(base_url, query = list(
-    season = 2025,
-    team = 19,
-    wartype = 1,
-    position = "all",
-    league = "all",
-    page = page_num,
-    pageSize = 100
-  ))
-  
-  data <- fromJSON(content(res, "text", encoding = "UTF-8"))
-  return(data$data)
-}
-
-# figure out total pages
-first <- GET(base_url, query = list(
-  season = 2025,
-  team = 19,
-  wartype = 1,
-  position = "all",
-  league = "all",
-  page = 1,
-  pageSize = 100
-))
-
-first_data <- fromJSON(content(first, "text", encoding = "UTF-8"))
-
-total_rows <- first_data$total
-page_size <- 100
-total_pages <- ceiling(total_rows / page_size)
-
-# loop through all pages
-all_data <- lapply(1:total_pages, get_page) |> bind_rows()
-
+# round WAR values
 first_data$totalWAR <- round(first_data$totalWAR, 2)
 
-# clean result
-df <- first_data %>%
-  select(playerName, totalWAR)
+# look for duplicated names in the first_data data set
+first_data$playerName[duplicated(first_data$playerName)]
+which(first_data$playerName == "Max Muncy")
 
-nrow(df)
+# correct duplicated names
+first_data[c(126, 1224), c(2, 4)]
+first_data[c(126, 1224), 2] <- c("Max Muncy (LAD)", "Max Muncy (ATH)")
+
+# check for any other duplicated names
+first_data$playerName[duplicated(first_data$playerName)]
+
+# create war_data set from the first_data data set
+war_data <- first_data |> 
+  select(playerName, totalWAR) |> 
+  distinct(playerName, .keep_all = TRUE)
+
+nrow(war_data)
+```
+
+
+```{r}
+##### Additional Cleaning (Special Characters) #####
+library(stringr)
+library(stringi)
+library(tidyr)
+
+# create a dataset of players that will be left out when the data merges
+omitted_players <- salary_table |>
+  fuzzyjoin::stringdist_anti_join(
+    all_players_2025, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+omitted_players
+
+# make a data set for players that played in 2025 with special characters in their name
+spec_char <- all_players_2025 |>
+  filter(str_detect(player_full_name, "[^\\x00-\\x7F]"))
+
+# make a data set of those players without the special characters in their names
+non_spec_char <- spec_char |> 
+  mutate(player_full_name = stri_trans_general(player_full_name, "Latin-ASCII"))
+
+# do an inner join with the non-special character name data and the omitted players to see if there is any overlap
+omitted_players |>
+  fuzzyjoin::stringdist_inner_join(
+    non_spec_char, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+
+# make lists of the special character names and those names without special characters
+spec_char_list <- spec_char$player_full_name
+non_spec_char_list <- non_spec_char$player_full_name
+
+# use the lists of names to correct the names that didn't have the proper special characters in the salary_table data set
+salary_table <- salary_table |>
+  mutate(Player  = if_else(Player %in% non_spec_char_list,
+                   spec_char_list[match(Player, non_spec_char_list)],Player))
+
+# try the other way around too 
+spec_char2 <- omitted_players |>
+  filter(str_detect(Player, "[^\\x00-\\x7F]"))
+
+non_spec_char2 <- spec_char2 |> 
+  mutate(Player = stri_trans_general(Player, "Latin-ASCII"))
+
+all_players_2025 |>
+  fuzzyjoin::stringdist_inner_join(
+    non_spec_char2, 
+    by = c("player_full_name" = "Player"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+
+spec_char_list2 <- spec_char2$Player
+non_spec_char_list2 <- non_spec_char2$Player
+
+salary_table <- salary_table |>
+  mutate(Player  = if_else(Player %in% spec_char_list2,
+                   non_spec_char_list2[match(Player, spec_char_list2)],Player))
+
+# check to see if we accidentally duplicated any names
+salary_table$Player[duplicated(salary_table$Player)]
+
+# correct the name that was accidentally duplicated and confirm no other duplicate names
+salary_table[406, 1] <- "Luis Garcia"
+salary_table$Player[duplicated(salary_table$Player)]
+```
+
+
+```{r}
+##### Additional Cleaning (Punctuation) #####
+# remake the omitted_players data set to account for the players who were corrected
+omitted_players <- salary_table |>
+  fuzzyjoin::stringdist_anti_join(
+    all_players_2025, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+omitted_players
+
+# make a data set for players that played in 2025 with a dash in their name
+punct <- all_players_2025 |>
+  filter(str_detect(player_full_name, "-"))
+
+# make a data set of those players without the punctuation in their names
+non_punct <- punct |> 
+  mutate(player_full_name = str_replace_all(player_full_name, pattern = "-", replacement = " "))
+
+# do an inner join with the non-special character name data and the omitted players to see if there is any overlap
+omitted_players |>
+  fuzzyjoin::stringdist_inner_join(
+    non_punct, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+
+# do it the other way around as well
+punct2 <- omitted_players |>
+  filter(str_detect(Player, "-"))
+
+non_punct2 <- punct2 |> 
+  mutate(Player = str_replace_all(Player, pattern = "-", replacement = " "))
+
+all_players_2025 |>
+  fuzzyjoin::stringdist_inner_join(
+    non_punct2, 
+    by = c("player_full_name" = "Player"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+
+punct_list <- punct2$Player
+non_punct_list <- non_punct2$Player
+
+salary_table <- salary_table |>
+  mutate(Player  = if_else(Player %in% punct_list,
+                   non_punct_list[match(Player, punct_list)],Player))
+
+
+```
+
+```{r}
+##### Additional Cleaning (Names with Jr.) #####
+# remake the omitted_players data set to account for the players who were corrected
+omitted_players <- salary_table |>
+  fuzzyjoin::stringdist_anti_join(
+    all_players_2025, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+omitted_players
+
+# make a data set for players that played in 2025 with "Jr." in their name
+junior <- all_players_2025 |>
+  filter(str_detect(player_full_name, " Jr."))
+
+# make a data set of those players without the "Jr." in their names
+non_junior <- junior |> 
+  mutate(player_full_name = str_replace_all(player_full_name, pattern = " Jr.", replacement = ""))
+
+# do an inner join with the non-"Jr." name data and the omitted players to see if there is any overlap
+omitted_players |>
+  fuzzyjoin::stringdist_inner_join(
+    non_junior, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+
+# since we know there is a Luis García and Luis García Jr. we want to omit that name to prevent a duplication
+junior <- junior |> filter(player_full_name != "Luis García Jr.")
+non_junior <- non_junior |> filter(player_full_name != "Luis García")
+
+jr_list <- junior$player_full_name
+non_jr_list <- non_junior$player_full_name
+
+salary_table <- salary_table |>
+  mutate(Player  = if_else(Player %in% non_jr_list,
+                   jr_list[match(Player, non_jr_list)],Player))
+
+
+# do it the other way around as well
+jr2 <- omitted_players |>
+  filter(str_detect(Player, " Jr."))
+
+non_jr2 <- jr2 |> 
+  mutate(Player = str_replace_all(Player, pattern = " Jr.", replacement = ""))
+
+all_players_2025 |>
+  fuzzyjoin::stringdist_inner_join(
+    non_jr2, 
+    by = c("player_full_name" = "Player"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+
+jr_list2 <- jr2$Player
+non_jr_list2 <- non_jr2$Player
+
+salary_table <- salary_table |>
+  mutate(Player  = if_else(Player %in% jr_list2,
+                   non_jr_list2[match(Player, jr_list2)],Player))
+
+# run this to see other names we might have missed
+all_players_2025 |> filter(str_detect(player_full_name, " Jr.")) |> 
+  fuzzyjoin::stringdist_anti_join(
+    salary_table, 
+    by = c("player_full_name" = "Player"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+# filter out the omitted players dataset by the last name of the players
+omitted_players |> filter(str_detect(Player, c("Alvarez|Edwards|Wade")))
+
+# we see an Alvarez and Edwards but no Wade, and upon further research we find that Nacho Alvarez Jr. is Ignacio Alvarez, and Carl Edwards Jr. is C.J. Edwards so we update the names in the salary table to match
+which(salary_table$Player %in% c("Ignacio Alvarez", "C.J. Edwards"))
+salary_table[c(753, 1061), 1] <- c("Nacho Alvarez Jr.", "Carl Edwards Jr.")
+```
+
+```{r}
+##### Additional Cleaning (Spelling Corrections/Miscellaneous) #####
+
+# remake the omitted_players data set to account for the players who were corrected
+omitted_players <- salary_table |>
+  fuzzyjoin::stringdist_anti_join(
+    all_players_2025, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+omitted_players
+
+# make a data frame of players that played in 2025 and aren't in the salary_table
+df <- all_players_2025 |>
+  fuzzyjoin::stringdist_anti_join(
+    salary_table, 
+    by = c("player_full_name" = "Player"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+df
+
+# in both data sets split up first and last names
+omitted_name_split <- omitted_players |> 
+  separate(Player, into = c("first_name", "last_name"), sep = " ", extra = "merge", remove = FALSE)
+
+df_name_split <- df |> 
+  separate(player_full_name, into = c("first_name", "last_name"), sep = " ", extra = "merge", remove = FALSE)
+
+# create a data set that matches the last names in the df and omitted_players data sets
+df2 <- df_name_split |>
+  fuzzyjoin::stringdist_inner_join(
+    omitted_name_split, 
+    by = "last_name", 
+    max_dist = 0.001, 
+    method = "jw"
+  ) |> 
+  select(player_full_name, last_name.x, Player)
+df2
+
+# from the df2 data we made a table to see which last names match and if they are the same player with a nickname or abbreviated name
+knitr::include_graphics("../ISA 401/df2_table.png")
+
+# find each row for these players
+which(salary_table$Player %in% c("Richard Palacios", "T.J. Friedl", "Leonardo Rivas", "Mike Siani", "C.J. Kayfus", "J.J. Bleday", 
+                                 "Bobby Seymour", "C.J. Alexander", "Donnie Walton", "Yulieski Gurriel", "P.J. Poulin", "Dominic Hamel",
+                                 "Zack Thompson", "A.J. Blubaugh", "Jake Junis", "Louie Varland", "D.L. Hall", "Michael Burrows", 
+                                 "Samuel Aldegheri", "Pat Monteverde"))
+
+# change the names in these rows to match the all_players_2025 data set
+salary_table[c(272,  443,  647,  689,  727,  749,  755,  800,  815,  943,
+               944,  984, 1000, 1125, 1179, 1269, 1322, 1337, 1378, 1447), 1] <- c(
+                 "Jakob Junis", "Yuli Gurriel", "TJ Friedl", "Richie Palacios", "Zach Thompson", "Michael Siani", 
+                 "JJ Bleday", "Louis Varland", "DL Hall", "Sam Aldegheri", "CJ Alexander", "AJ Blubaugh", 
+                 "Mike Burrows", "Dom Hamel", "CJ Kayfus", "Patrick Monteverde", "PJ Poulin", "Leo Rivas", 
+                 "Bob Seymour", "Donovan Walton")
+
+# check to see if the chage worked
+salary_table[c(272,  443,  647,  689,  727,  749,  755,  800,  815,  943,
+               944,  984, 1000, 1125, 1179, 1269, 1322, 1337, 1378, 1447), 1]
+
+# remake the omitted_players data set to account for the players who were corrected
+omitted_players <- salary_table |>
+  fuzzyjoin::stringdist_anti_join(
+    all_players_2025, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+omitted_players
+
+# check for any duplicate names
+salary_table$Player[duplicated(salary_table$Player)]
+
+# we use this code to look for players that have middle initials
+all_players_2025 |>
+  filter(str_detect(player_full_name, " [A-Z]\\. ")) 
+
+omitted_players |>
+  filter(str_detect(Player, " [A-Z]\\. ")) 
+
+# looking through the filtered data sets and non-filtered data sets it appears there are 3 names that need to be changed
+which(salary_table$Player %in% c("Jose Ferrer", "Josh H. Smith", "Carlos F. Rodriguez"))
+
+salary_table[c(638, 825, 1348), 1]
+salary_table[c(638, 825, 1348), 1] <- c("Josh Smith", "Jose A. Ferrer", "Carlos Rodriguez")
+
+# other names that when going through omitted players and all players data set matched
+which(salary_table$Player %in% c("Ha seong Kim", "Leonardo Jimenez"))
+
+# change the two names
+salary_table[c(129, 1167), 1]
+salary_table[c(129, 1167), 1] <- c("Ha-Seong Kim", "Leo Jiménez")
+salary_table[c(129, 1167), 1]
+
+# remake the omitted_players data set to account for the players who were corrected
+omitted_players <- salary_table |>
+  fuzzyjoin::stringdist_anti_join(
+    all_players_2025, 
+    by = c("Player" = "player_full_name"), 
+    max_dist = 0.001, 
+    method = "jw"
+  )
+omitted_players
+
+# every other player that is omitted either did not play during 2025 or will be included with the merge that we will use
+```
